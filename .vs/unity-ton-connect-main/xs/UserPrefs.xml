@@ -1,0 +1,23 @@
+﻿<Properties StartupConfiguration="{8A559226-A3CA-755B-1DDE-52BD332D75DC}|">
+  <MonoDevelop.Ide.Workbench ActiveDocument="Assets/PaintCircleSegment.cs">
+    <Files>
+      <File FileName="../../Desktop/BildForDemo11/index.html" Line="30" Column="64" />
+      <File FileName="Library/PackageCache/com.unity.toolchain.win-x86_64-linux-x86_64@2.0.6/Editor/Unity.Toolchain.cs" />
+      <File FileName="Assets/TonConnect/Scripts/Other/UIManager.cs" />
+      <File FileName="Assets/TonConnect/Scripts/QR Code/QRCoder.cs" />
+      <File FileName="Assets/TonConnect/Scripts/TonConnect/TonConnectHandler.cs" />
+      <File FileName="Assets/ButtonManager.cs" Line="17" Column="7" />
+      <File FileName="Assets/AnimationController.cs" />
+      <File FileName="Assets/FloatingText.cs" Line="21" Column="6" />
+      <File FileName="Assets/MoveAroundCircle.cs" Line="19" Column="1" />
+      <File FileName="Assets/PaintCircleSegment.cs" Line="45" Column="1" />
+    </Files>
+  </MonoDevelop.Ide.Workbench>
+  <MonoDevelop.Ide.DebuggingService.PinnedWatches />
+  <MonoDevelop.Ide.Workspace ActiveConfiguration="Debug" />
+  <MonoDevelop.Ide.ItemProperties.Assembly-CSharp PreferredExecutionTarget="50958d46-1bcd-41a2-b8db-3e0da18b6536" />
+  <MonoDevelop.Ide.DebuggingService.Breakpoints>
+    <BreakpointStore />
+  </MonoDevelop.Ide.DebuggingService.Breakpoints>
+  <MultiItemStartupConfigurations />
+</Properties>
