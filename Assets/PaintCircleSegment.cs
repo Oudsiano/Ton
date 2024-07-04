@@ -85,11 +85,11 @@ public class PaintCircleSegment : MonoBehaviour
     {
         float fillAmount = (end - start + 360) % 360 / 360f;
         circleImage.fillAmount = fillAmount;
-        circleImage.fillClockwise = true;
-        circleImage.fillOrigin = 2; // Устанавливаем начало заполнения на верхний центр
+        circleImage.fillClockwise = false;
+        circleImage.fillOrigin = (int)Image.Origin360.Right; // Устанавливаем начало заполнения на верхний центр
 
         // Поворачиваем изображение круга, чтобы оно соответствовало началу заполнения
-        circleImage.transform.localEulerAngles = new Vector3(0, 0, -start);
+        circleImage.transform.localEulerAngles = new Vector3(0, 0, start);
     }
 
     void UpdateIndicators()
@@ -115,7 +115,7 @@ public class PaintCircleSegment : MonoBehaviour
     {
         while (true)
         {
-            Debug.Log($"Current Angle: {currentAngle}, Sector: {startAngle} to {endAngle}");
+           // Debug.Log($"Current Angle: {currentAngle}, Sector: {startAngle} to {endAngle}");
             yield return new WaitForSeconds(0.5f);
         }
     }
