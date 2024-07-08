@@ -4,6 +4,7 @@ using UnityEngine.UI;
 using TMPro;
 using System.Collections;
 using System;
+using DG.Tweening; // Добавьте это пространство имен для использования DoTween
 
 public class ButtonManager : MonoBehaviour
 {
@@ -13,14 +14,20 @@ public class ButtonManager : MonoBehaviour
     public TMP_Text RoundText;
     public Slider clickSlider;
     public GameObject floatingTextPrefab; // Префаб плавающего текста
-
+    public PaintCircleSegment paintCircleSegment; // Ссылка на скрипт PaintCircleSegment
+    public GameObject sled; // Ссылка на объект Sled
+    public string[] bossName = { "First", "Meme" };
     private Animator outputFrameAnimator;
+    private Animator ggAnimator; // Аниматор на объекте GG
+    private Animator firstAnimator; // Аниматор на объекте GG
+    private Animator pletkAnimator; // Аниматор на объекте GG
+
     private int clickCount = 0;
     private int clickThreshold = 100;
     private int round = 1;
     private int coinsPerClick = 1;
     private string userId;
-    private string apiUrl = "https://2b85-195-10-205-80.ngrok-free.app/api/";
+    private string apiUrl = "https://1aa0-195-10-205-80.ngrok-free.app/api/";
 
     void Start()
     {
@@ -42,48 +49,58 @@ public class ButtonManager : MonoBehaviour
         clickSlider.minValue = 0;
         clickSlider.maxValue = 1;
 
-        // Получаем аниматор объекта output_frame_0001
-        //GameObject outputFrame = GameObject.Find("output_frame_0001");
-        //if (outputFrame != null)
-        //{
-        //    outputFrameAnimator = outputFrame.GetComponent<Animator>();
-        //}
-        //else
-        //{
-        //    Debug.LogError("output_frame_0001 not found");
-        //}
+        // Получаем компонент аниматора на объекте GG
+        GameObject.Find(bossName[0]).SetActive(true);
+        ggAnimator = GameObject.Find("GG").GetComponent<Animator>();
+        firstAnimator = GameObject.Find("First").GetComponent<Animator>();
+        pletkAnimator = GameObject.Find("Pletk").GetComponent<Animator>();
 
         UpdateUI();
     }
 
     public void OnButtonClick()
     {
-        clickCount++;
-        StartCoroutine(UpdateCoins(coinsPerClick)); // Добавляем монеты с каждым кликом
-        StartCoroutine(UpdateCountBlows(clickCount)); // Обновляем количество тапов на сервере
-        UpdateUI();
-        //outputFrameAnimator.SetBool("isAttacking", true);
-
-        // Создаем плавающий текст
-        ShowFloatingText($"+{coinsPerClick}");
-
-        if (clickCount >= clickThreshold)
+        // Проверяем, находится ли текущий угол в диапазоне углов
+        if (paintCircleSegment.IsAngleInSector(paintCircleSegment.currentAngle, paintCircleSegment.startAngle, paintCircleSegment.endAngle))
         {
-            clickCount = 0;
-            round++;
-            clickThreshold += round * 10; // Увеличиваем количество нажатий с каждым раундом
-            StartCoroutine(UpdateLevelBoss(round)); // Обновляем номер босса на сервере
+            // Запускаем анимацию атаки
+            ggAnimator.SetBool("attack", true);
+            firstAnimator.SetBool("attack", true);
+            pletkAnimator.SetBool("attack", true);
+            clickCount++;
+            StartCoroutine(UpdateCoins(coinsPerClick)); // Добавляем монеты с каждым кликом
+            StartCoroutine(UpdateCountBlows(clickCount)); // Обновляем количество тапов на сервере
             UpdateUI();
-        }
 
-        // Запускаем сброс параметра через одну секунду
-        StartCoroutine(ResetAttackParameter());
+            // Создаем плавающий текст
+            ShowFloatingText($"+{coinsPerClick}");
+
+            if (clickCount >= clickThreshold)
+            {
+                clickCount = 0;
+                round++;
+                clickThreshold += round * 10; // Увеличиваем количество нажатий с каждым раундом
+                StartCoroutine(UpdateLevelBoss(round)); // Обновляем номер босса на сервере
+                UpdateUI();
+            }
+
+            // Изменяем диапазон углов после успешного клика
+            paintCircleSegment.SetRandomAngles();
+
+            // Запускаем сброс параметра через одну секунду
+            StartCoroutine(ResetAttackParameter());
+
+            // Запускаем анимацию Sled
+            AnimateSled();
+        }
     }
 
     IEnumerator ResetAttackParameter()
     {
-        yield return null; // Ожидаем завершения анимации (время может быть настроено)
-//        outputFrameAnimator.SetBool("isAttacking", false);
+        yield return new WaitForSeconds(0.1f); // Ожидаем одну секунду (или другое время в зависимости от продолжительности анимации)
+        ggAnimator.SetBool("attack", false); // Отключаем анимацию атаки
+        firstAnimator.SetBool("attack", false); // Отключаем анимацию атаки
+        pletkAnimator.SetBool("attack", false);
     }
 
     void UpdateUI()
@@ -303,4 +320,46 @@ public class ButtonManager : MonoBehaviour
             Debug.LogError("FloatingText script not found on the prefab!");
         }
     }
+
+    private void AnimateSled()
+    {
+        if (sled == null)
+        {
+            Debug.LogError("Sled GameObject is not assigned in the inspector!");
+            return;
+        }
+
+        // Активируем объект Sled
+        sled.SetActive(true);
+
+        // Получаем или добавляем CanvasGroup компонент
+        CanvasGroup canvasGroup = sled.GetComponent<CanvasGroup>();
+        if (canvasGroup == null)
+        {
+            canvasGroup = sled.AddComponent<CanvasGroup>();
+        }
+
+        // Устанавливаем начальную прозрачность и масштаб
+        canvasGroup.alpha = 1;
+        sled.transform.localScale = new Vector3(0.283898503f, 0.283898503f, 0.283898503f);
+
+        // Запускаем анимацию увеличения, уменьшения и плавного исчезновения
+        sled.transform.DOScale(new Vector3(0.5f, 0.5f, 0.5f), 0.2f) // Увеличиваем объект
+            .OnComplete(() =>
+            {
+                Debug.Log("Увеличение завершено");
+                sled.transform.DOScale(new Vector3(0.283898503f, 0.283898503f, 0.283898503f), 0.2f) // Уменьшаем объект
+                    .OnComplete(() =>
+                    {
+                        Debug.Log("Уменьшение завершено");
+                        canvasGroup.DOFade(0, 1f) // Плавно исчезаем
+                            .OnComplete(() =>
+                            {
+                                Debug.Log("Исчезновение завершено");
+                                sled.SetActive(false); // Деактивируем объект после анимации
+                        });
+                    });
+            });
+    }
+
 }

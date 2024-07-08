@@ -8,21 +8,21 @@ public class PaintCircleSegment : MonoBehaviour
     public Transform arrow; // Ссылка на стрелку
     public Transform startIndicator; // Объект для отображения начала сектора
     public Transform endIndicator; // Объект для отображения конца сектора
-    public float interval = 1f; // Интервал изменения углов в секундах
+    public float interval = 1000f; // Интервал изменения углов в секундах
     public float radius = 180f; // Радиус окружности
 
-    private float startAngle;
-    private float endAngle;
-    private float currentAngle;
-    private bool isInSector;
+    public float startAngle;
+    public float endAngle;
+    public float currentAngle;
+    public bool isInSector;
 
-    void Start()
+    public void Start()
     {
         StartCoroutine(ChangeAnglesRoutine());
         StartCoroutine(LogCurrentAngleRoutine());
     }
 
-    void Update()
+    public void Update()
     {
         // Рассчитываем текущий угол на основе позиции стрелки
         Vector3 direction = arrow.position - circleImage.transform.position;
@@ -52,7 +52,7 @@ public class PaintCircleSegment : MonoBehaviour
         UpdateIndicators();
     }
 
-    IEnumerator ChangeAnglesRoutine()
+    public IEnumerator ChangeAnglesRoutine()
     {
         while (true)
         {
@@ -61,14 +61,14 @@ public class PaintCircleSegment : MonoBehaviour
         }
     }
 
-    void SetRandomAngles()
+    public void SetRandomAngles()
     {
         startAngle = Random.Range(0f, 360f);
         endAngle = (startAngle + 30f) % 360f;
         Debug.Log($"New Sector: Start = {startAngle}, End = {endAngle}");
     }
 
-    bool IsAngleInSector(float angle, float start, float end)
+    public bool IsAngleInSector(float angle, float start, float end)
     {
         if (start < end)
         {
@@ -81,7 +81,7 @@ public class PaintCircleSegment : MonoBehaviour
         }
     }
 
-    void PaintSegment(float start, float end)
+    public void PaintSegment(float start, float end)
     {
         float fillAmount = (end - start + 360) % 360 / 360f;
         circleImage.fillAmount = fillAmount;
@@ -92,7 +92,7 @@ public class PaintCircleSegment : MonoBehaviour
         circleImage.transform.localEulerAngles = new Vector3(0, 0, start);
     }
 
-    void UpdateIndicators()
+    public void UpdateIndicators()
     {
         // Рассчитываем позиции индикаторов
         Vector3 startPos = CalculatePositionOnCircle(startAngle);
@@ -103,7 +103,7 @@ public class PaintCircleSegment : MonoBehaviour
         endIndicator.position = circleImage.transform.position + endPos;
     }
 
-    Vector3 CalculatePositionOnCircle(float angle)
+    public Vector3 CalculatePositionOnCircle(float angle)
     {
         float radian = angle * Mathf.Deg2Rad;
         float x = Mathf.Cos(radian) * radius;
@@ -111,7 +111,7 @@ public class PaintCircleSegment : MonoBehaviour
         return new Vector3(x, y, 0);
     }
 
-    IEnumerator LogCurrentAngleRoutine()
+    public IEnumerator LogCurrentAngleRoutine()
     {
         while (true)
         {
