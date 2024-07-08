@@ -16,7 +16,7 @@ public class ButtonManager : MonoBehaviour
     public GameObject floatingTextPrefab; // Префаб плавающего текста
     public PaintCircleSegment paintCircleSegment; // Ссылка на скрипт PaintCircleSegment
     public GameObject sled; // Ссылка на объект Sled
-    public string[] bossName = { "First", "Meme" };
+    
     private Animator outputFrameAnimator;
     private Animator ggAnimator; // Аниматор на объекте GG
     private Animator firstAnimator; // Аниматор на объекте GG
@@ -50,7 +50,6 @@ public class ButtonManager : MonoBehaviour
         clickSlider.maxValue = 1;
 
         // Получаем компонент аниматора на объекте GG
-        GameObject.Find(bossName[0]).SetActive(true);
         ggAnimator = GameObject.Find("GG").GetComponent<Animator>();
         firstAnimator = GameObject.Find("First").GetComponent<Animator>();
         pletkAnimator = GameObject.Find("Pletk").GetComponent<Animator>();
