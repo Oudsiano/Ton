@@ -10,11 +10,13 @@ public class PaintCircleSegment : MonoBehaviour
     public Transform endIndicator; // Объект для отображения конца сектора
     public float interval = 1000f; // Интервал изменения углов в секундах
     public float radius = 180f; // Радиус окружности
+    public float rotationSpeed = 10f; // Начальная скорость вращения
 
     public float startAngle;
     public float endAngle;
     public float currentAngle;
     public bool isInSector;
+    private Animator ggAnimator;
 
     public void Start()
     {
@@ -24,6 +26,9 @@ public class PaintCircleSegment : MonoBehaviour
 
     public void Update()
     {
+        // Вращаем объект
+        arrow.RotateAround(circleImage.transform.position, Vector3.forward, rotationSpeed * Time.deltaTime);
+
         // Рассчитываем текущий угол на основе позиции стрелки
         Vector3 direction = arrow.position - circleImage.transform.position;
         currentAngle = Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg;
@@ -115,8 +120,13 @@ public class PaintCircleSegment : MonoBehaviour
     {
         while (true)
         {
-           // Debug.Log($"Current Angle: {currentAngle}, Sector: {startAngle} to {endAngle}");
+            // Debug.Log($"Current Angle: {currentAngle}, Sector: {startAngle} to {endAngle}");
             yield return new WaitForSeconds(0.5f);
         }
+    }
+
+    public void IncreaseRotationSpeed(float amount)
+    {
+        rotationSpeed += amount;
     }
 }

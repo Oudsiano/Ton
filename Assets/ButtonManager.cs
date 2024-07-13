@@ -16,14 +16,17 @@ public class ButtonManager : MonoBehaviour
     public GameObject floatingTextPrefab; // Префаб плавающего текста
     public PaintCircleSegment paintCircleSegment; // Ссылка на скрипт PaintCircleSegment
     public GameObject sled; // Ссылка на объект Sled
-    
+
+    public GameObject[] characters;
+
     private Animator outputFrameAnimator;
     private Animator ggAnimator; // Аниматор на объекте GG
-    private Animator firstAnimator; // Аниматор на объекте GG
-    private Animator pletkAnimator; // Аниматор на объекте GG
+    private Animator pletkAnimator; // Аниматор на объекте Pletk
+    private Animator activeCharacterAnimator; // Аниматор на активном объекте
+    private int activeCharacterIndex = 0; // Индекс текущего активного персонажа
 
     private int clickCount = 0;
-    private int clickThreshold = 100;
+    private int clickThreshold = 1;
     private int round = 1;
     private int coinsPerClick = 1;
     private string userId;
@@ -49,10 +52,12 @@ public class ButtonManager : MonoBehaviour
         clickSlider.minValue = 0;
         clickSlider.maxValue = 1;
 
-        // Получаем компонент аниматора на объекте GG
+        // Получаем компоненты аниматора на объектах GG и Pletk
         ggAnimator = GameObject.Find("GG").GetComponent<Animator>();
-        firstAnimator = GameObject.Find("First").GetComponent<Animator>();
         pletkAnimator = GameObject.Find("Pletk").GetComponent<Animator>();
+
+        // Устанавливаем активного персонажа
+        SetActiveCharacter(0);
 
         UpdateUI();
     }
@@ -64,7 +69,7 @@ public class ButtonManager : MonoBehaviour
         {
             // Запускаем анимацию атаки
             ggAnimator.SetBool("attack", true);
-            firstAnimator.SetBool("attack", true);
+            activeCharacterAnimator.SetBool("attack", true);
             pletkAnimator.SetBool("attack", true);
             clickCount++;
             StartCoroutine(UpdateCoins(coinsPerClick)); // Добавляем монеты с каждым кликом
@@ -78,9 +83,15 @@ public class ButtonManager : MonoBehaviour
             {
                 clickCount = 0;
                 round++;
-                clickThreshold += round * 10; // Увеличиваем количество нажатий с каждым раундом
+                clickThreshold += round * 1; // Увеличиваем количество нажатий с каждым раундом
                 StartCoroutine(UpdateLevelBoss(round)); // Обновляем номер босса на сервере
                 UpdateUI();
+
+                // Сменяем активного персонажа
+                ChangeActiveCharacter();
+
+                // Увеличиваем скорость вращения
+                paintCircleSegment.IncreaseRotationSpeed(10f); // Увеличиваем скорость на 10 единиц (можно изменить на желаемое значение)
             }
 
             // Изменяем диапазон углов после успешного клика
@@ -98,7 +109,7 @@ public class ButtonManager : MonoBehaviour
     {
         yield return new WaitForSeconds(0.1f); // Ожидаем одну секунду (или другое время в зависимости от продолжительности анимации)
         ggAnimator.SetBool("attack", false); // Отключаем анимацию атаки
-        firstAnimator.SetBool("attack", false); // Отключаем анимацию атаки
+        activeCharacterAnimator.SetBool("attack", false); // Отключаем анимацию атаки
         pletkAnimator.SetBool("attack", false);
     }
 
@@ -356,9 +367,35 @@ public class ButtonManager : MonoBehaviour
                             {
                                 Debug.Log("Исчезновение завершено");
                                 sled.SetActive(false); // Деактивируем объект после анимации
-                        });
+                            });
                     });
             });
     }
 
+    private void SetActiveCharacter(int index)
+    {
+        if (index < 0 || index >= characters.Length)
+        {
+            Debug.LogError("Character index out of range!");
+            return;
+        }
+
+        // Деактивируем текущего активного персонажа
+        if (activeCharacterAnimator != null)
+        {
+            characters[activeCharacterIndex].SetActive(false);
+        }
+
+        // Активируем нового персонажа
+        activeCharacterIndex = index;
+        characters[activeCharacterIndex].SetActive(true);
+        activeCharacterAnimator = characters[activeCharacterIndex].GetComponent<Animator>();
+    }
+
+    private void ChangeActiveCharacter()
+    {
+        // Вычисляем индекс следующего персонажа
+        int nextCharacterIndex = (activeCharacterIndex + 1) % characters.Length;
+        SetActiveCharacter(nextCharacterIndex);
+    }
 }
