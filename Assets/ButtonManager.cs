@@ -4,7 +4,7 @@ using UnityEngine.UI;
 using TMPro;
 using System.Collections;
 using System;
-using DG.Tweening; // Добавьте это пространство имен для использования DoTween
+using DG.Tweening;
 
 public class ButtonManager : MonoBehaviour
 {
@@ -17,7 +17,16 @@ public class ButtonManager : MonoBehaviour
     public PaintCircleSegment paintCircleSegment; // Ссылка на скрипт PaintCircleSegment
     public GameObject sled; // Ссылка на объект Sled
 
+    public string[] AttackerSays = { "Лесбиянки — это женщины с родинками на шее, из которых растут волосы»", "Мы не заблудились, мы просто не знаем, где находимся" };
+    public string[] AttackindSays = { "Нельзя недооценивать силу халявы", "Для наркотиков, секса и алкоголя есть свое время и место. И это место — колледж.", "Ты что, не знаешь главный закон физики? Все прикольное стоит минимум восемь баксов." };
+
+    public TMP_Text attackerText; // Текст для сообщения атакующего
+    public TMP_Text targetText; // Текст для сообщения атакуемого
+
     public GameObject[] characters;
+    public MoveAroundCircle moveAroundCircle; // Ссылка на скрипт MoveAroundCircle
+    public GameObject bossChangePanel; // Панель для отображения текста
+    public TMP_Text bossChangeText; // Текст для отображения сообщений
 
     private Animator outputFrameAnimator;
     private Animator ggAnimator; // Аниматор на объекте GG
@@ -25,8 +34,12 @@ public class ButtonManager : MonoBehaviour
     private Animator activeCharacterAnimator; // Аниматор на активном объекте
     private int activeCharacterIndex = 0; // Индекс текущего активного персонажа
 
+    public GameObject attackerMessage; // Объект сообщения атакующего
+    public GameObject targetMessage; // Объект сообщения атакуемого
+
+
     private int clickCount = 0;
-    private int clickThreshold = 1;
+    private int clickThreshold = 10;
     private int round = 1;
     private int coinsPerClick = 1;
     private string userId;
@@ -79,18 +92,28 @@ public class ButtonManager : MonoBehaviour
             // Создаем плавающий текст
             ShowFloatingText($"+{coinsPerClick}");
 
+            // Показываем случайное сообщение
+            ShowRandomMessage();
+
             if (clickCount >= clickThreshold)
             {
                 clickCount = 0;
                 round++;
-                clickThreshold += round * 1; // Увеличиваем количество нажатий с каждым раундом
+                clickThreshold += round * 10; // Увеличиваем количество нажатий с каждым раундом
                 StartCoroutine(UpdateLevelBoss(round)); // Обновляем номер босса на сервере
                 UpdateUI();
 
                 // Сменяем активного персонажа
                 ChangeActiveCharacter();
 
-                // Увеличиваем скорость вращения
+                // Увеличиваем скорость вращения объекта
+                if (moveAroundCircle != null)
+                {
+                    Debug.Log("Увеличение скорости вращения объекта");
+                    moveAroundCircle.IncreaseSpeed(0.5f); // Увеличиваем скорость на 0.5 единиц (можно изменить на желаемое значение)
+                }
+
+                // Увеличиваем скорость вращения PaintCircleSegment (если необходимо)
                 paintCircleSegment.IncreaseRotationSpeed(10f); // Увеличиваем скорость на 10 единиц (можно изменить на желаемое значение)
             }
 
@@ -104,6 +127,7 @@ public class ButtonManager : MonoBehaviour
             AnimateSled();
         }
     }
+
 
     IEnumerator ResetAttackParameter()
     {
@@ -396,6 +420,67 @@ public class ButtonManager : MonoBehaviour
     {
         // Вычисляем индекс следующего персонажа
         int nextCharacterIndex = (activeCharacterIndex + 1) % characters.Length;
-        SetActiveCharacter(nextCharacterIndex);
+
+        // Получаем имена старого и нового босса
+        string oldBossName = characters[activeCharacterIndex].name;
+        string newBossName = characters[nextCharacterIndex].name;
+
+        // Обновляем текст в панели
+        bossChangeText.text = $"Поздравляем! Босс с именем \"{oldBossName}\" повержен. Вам предстоит победить нового босса с именем \"{newBossName}\".";
+
+        // Активируем панель
+        bossChangePanel.SetActive(true);
+
+        // Деактивируем текущего активного персонажа
+        if (activeCharacterAnimator != null)
+        {
+            characters[activeCharacterIndex].SetActive(false);
+        }
+
+        // Активируем нового персонажа
+        activeCharacterIndex = nextCharacterIndex;
+        characters[activeCharacterIndex].SetActive(true);
+        activeCharacterAnimator = characters[activeCharacterIndex].GetComponent<Animator>();
+
+        // Запускаем корутину для деактивации панели через 3 секунды
+        StartCoroutine(HideBossChangePanel());
     }
+
+    private IEnumerator HideBossChangePanel()
+    {
+        yield return new WaitForSeconds(3f); // Время отображения панели
+        bossChangePanel.SetActive(false);
+    }
+    private void ShowRandomMessage()
+    {
+        // Деактивируем оба сообщения, чтобы начать с чистого листа
+        attackerMessage.SetActive(false);
+        targetMessage.SetActive(false);
+
+        // Выбираем случайное сообщение для отображения
+        int randomChoice = UnityEngine.Random.Range(0, 2);
+
+        if (randomChoice == 0)
+        {
+            attackerMessage.SetActive(true);
+            attackerText.text = AttackerSays[UnityEngine.Random.Range(0, AttackerSays.Length)];
+        }
+        else
+        {
+            targetMessage.SetActive(true);
+            targetText.text = AttackindSays[UnityEngine.Random.Range(0, AttackindSays.Length)];
+        }
+
+        // Запускаем корутину для отключения сообщения через 3 секунды
+        StartCoroutine(HideMessageAfterDelay());
+    }
+
+
+    private IEnumerator HideMessageAfterDelay()
+    {
+        yield return new WaitForSeconds(3f); // Время отображения сообщения
+        attackerMessage.SetActive(false);
+        targetMessage.SetActive(false);
+    }
+
 }

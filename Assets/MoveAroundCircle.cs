@@ -24,4 +24,10 @@ public class MoveAroundCircle : MonoBehaviour
         float angleInDegrees = angle * Mathf.Rad2Deg;
         //Debug.Log("Current Angle: " + angleInDegrees % 360);
     }
+
+    public void IncreaseSpeed(float increment)
+    {
+        speed += increment;
+        Debug.Log("Скорость увеличена на " + increment + ". Новая скорость: " + speed);
+    }
 }
