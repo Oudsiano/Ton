@@ -12,18 +12,25 @@ public class ButtonManager : MonoBehaviour
     public TMP_Text balanceText;
     public TMP_Text ClickCountText;
     public TMP_Text RoundText;
+    public TMP_Text currencyText; // Текст для отображения количества валюты
     public Slider clickSlider;
     public GameObject floatingTextPrefab; // Префаб плавающего текста
     public PaintCircleSegment paintCircleSegment; // Ссылка на скрипт PaintCircleSegment
     public GameObject sled; // Ссылка на объект Sled
 
-    public string[] AttackerSays = { "Лесбиянки — это женщины с родинками на шее, из которых растут волосы»", "Мы не заблудились, мы просто не знаем, где находимся" };
+    public string[] AttackerSays = { "Лесбиянки — это женщины с родинками на шее, из которых растут волосы", "Мы не заблудились, мы просто не знаем, где находимся" };
     public string[] AttackindSays = { "Нельзя недооценивать силу халявы", "Для наркотиков, секса и алкоголя есть свое время и место. И это место — колледж.", "Ты что, не знаешь главный закон физики? Все прикольное стоит минимум восемь баксов." };
 
     public TMP_Text attackerText; // Текст для сообщения атакующего
     public TMP_Text targetText; // Текст для сообщения атакуемого
 
     public GameObject[] characters;
+    public GameObject[] weapons; // Массив объектов оружия
+    private Animator activeWeaponAnimator; // Аниматор на текущем активном оружии
+
+    private int activeWeaponIndex = 0; // Индекс текущего активного оружия
+    private int inGameCurrency = 0; // Количество внутриигровой валюты
+
     public MoveAroundCircle moveAroundCircle; // Ссылка на скрипт MoveAroundCircle
     public GameObject bossChangePanel; // Панель для отображения текста
     public TMP_Text bossChangeText; // Текст для отображения сообщений
@@ -37,11 +44,14 @@ public class ButtonManager : MonoBehaviour
     public GameObject attackerMessage; // Объект сообщения атакующего
     public GameObject targetMessage; // Объект сообщения атакуемого
 
+    private int weaponDamage = 1; // Урон текущего оружия
+    private int coinsPerClick = 1; // Количество монет, зарабатываемых за клик
+    private int inGameCoinsPerClick = 1; // Количество внутриигровых монет, зарабатываемых за клик
+
 
     private int clickCount = 0;
     private int clickThreshold = 10;
     private int round = 1;
-    private int coinsPerClick = 1;
     private string userId;
     private string apiUrl = "https://1aa0-195-10-205-80.ngrok-free.app/api/";
 
@@ -71,8 +81,18 @@ public class ButtonManager : MonoBehaviour
 
         // Устанавливаем активного персонажа
         SetActiveCharacter(0);
+        SetActiveWeapon(0); // Устанавливаем начальное активное оружие
 
         UpdateUI();
+    }
+
+    void Update()
+    {
+        if (Input.GetKeyDown(KeyCode.Space))
+        {
+            // Сменяем оружие при нажатии клавиши Space
+            ChangeWeapon();
+        }
     }
 
     public void OnButtonClick()
@@ -84,9 +104,18 @@ public class ButtonManager : MonoBehaviour
             ggAnimator.SetBool("attack", true);
             activeCharacterAnimator.SetBool("attack", true);
             pletkAnimator.SetBool("attack", true);
-            clickCount++;
+            if (activeWeaponAnimator != null)
+            {
+                activeWeaponAnimator.SetBool("attack", true); // Запускаем анимацию атаки на активном оружии
+            }
+
+            clickCount += weaponDamage; // Увеличиваем количество кликов на значение урона текущего оружия
+
             StartCoroutine(UpdateCoins(coinsPerClick)); // Добавляем монеты с каждым кликом
             StartCoroutine(UpdateCountBlows(clickCount)); // Обновляем количество тапов на сервере
+
+            // Увеличиваем количество внутриигровой валюты
+            inGameCurrency += inGameCoinsPerClick;
             UpdateUI();
 
             // Создаем плавающий текст
@@ -135,6 +164,10 @@ public class ButtonManager : MonoBehaviour
         ggAnimator.SetBool("attack", false); // Отключаем анимацию атаки
         activeCharacterAnimator.SetBool("attack", false); // Отключаем анимацию атаки
         pletkAnimator.SetBool("attack", false);
+        if (activeWeaponAnimator != null)
+        {
+            activeWeaponAnimator.SetBool("attack", false); // Отключаем анимацию атаки на активном оружии
+        }
     }
 
     void UpdateUI()
@@ -142,7 +175,9 @@ public class ButtonManager : MonoBehaviour
         ClickCountText.text = $"{clickCount} / {clickThreshold}";
         clickSlider.value = (float)clickCount / clickThreshold;
         RoundText.text = $"{round}";
+        currencyText.text = $"Currency: {inGameCurrency}"; // Обновляем текст внутриигровой валюты
     }
+
 
     public void OnGetBalanceButtonClicked()
     {
@@ -451,6 +486,7 @@ public class ButtonManager : MonoBehaviour
         yield return new WaitForSeconds(3f); // Время отображения панели
         bossChangePanel.SetActive(false);
     }
+
     private void ShowRandomMessage()
     {
         // Деактивируем оба сообщения, чтобы начать с чистого листа
@@ -475,7 +511,6 @@ public class ButtonManager : MonoBehaviour
         StartCoroutine(HideMessageAfterDelay());
     }
 
-
     private IEnumerator HideMessageAfterDelay()
     {
         yield return new WaitForSeconds(3f); // Время отображения сообщения
@@ -483,4 +518,42 @@ public class ButtonManager : MonoBehaviour
         targetMessage.SetActive(false);
     }
 
+    public void OnWeaponPurchased(int weaponIndex)
+    {
+        SetActiveWeapon(weaponIndex);
+        // Дополнительная логика для покупки оружия (например, вычитание монет)
+    }
+
+    private void SetActiveWeapon(int index)
+    {
+        if (index < 0 || index >= weapons.Length)
+        {
+            Debug.LogError("Weapon index out of range!");
+            return;
+        }
+
+        // Деактивируем текущее активное оружие
+        if (activeWeaponIndex >= 0 && activeWeaponIndex < weapons.Length)
+        {
+            weapons[activeWeaponIndex].SetActive(false);
+        }
+
+        // Активируем новое оружие
+        activeWeaponIndex = index;
+        weapons[activeWeaponIndex].SetActive(true);
+        activeWeaponAnimator = weapons[activeWeaponIndex].GetComponent<Animator>();
+
+        // Обновляем характеристики оружия
+        weaponDamage = index + 1; // Урон соответствует индексу + 1 (первое оружие наносит 1 урон и т.д.)
+        coinsPerClick = index + 1; // Количество монет соответствует индексу + 1
+        inGameCoinsPerClick = index + 1; // Количество внутриигровых монет соответствует индексу + 1
+    }
+
+
+    private void ChangeWeapon()
+    {
+        // Вычисляем индекс следующего оружия
+        int nextWeaponIndex = (activeWeaponIndex + 1) % weapons.Length;
+        SetActiveWeapon(nextWeaponIndex);
+    }
 }
