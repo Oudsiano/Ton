@@ -8,52 +8,71 @@ using DG.Tweening;
 
 public class ButtonManager : MonoBehaviour
 {
+    // UI Elements
+    [Header("UI Elements")]
     public TMP_Text id;
     public TMP_Text balanceText;
     public TMP_Text ClickCountText;
     public TMP_Text RoundText;
     public TMP_Text currencyText; // Текст для отображения количества валюты
     public Slider clickSlider;
+    public TMP_Text attackerText; // Текст для сообщения атакующего
+    public TMP_Text targetText; // Текст для сообщения атакуемого
+    public TMP_Text bossChangeText; // Текст для отображения сообщений
+    public TMP_Text upgradeButtonText; // Текст для кнопки апгрейда оружия
+    public Button upgradeButton; // Кнопка апгрейда оружия
+
+    // Game Objects
+    [Header("Game Objects")]
     public GameObject floatingTextPrefab; // Префаб плавающего текста
     public PaintCircleSegment paintCircleSegment; // Ссылка на скрипт PaintCircleSegment
     public GameObject sled; // Ссылка на объект Sled
-
-    public string[] AttackerSays = { "Лесбиянки — это женщины с родинками на шее, из которых растут волосы", "Мы не заблудились, мы просто не знаем, где находимся" };
-    public string[] AttackindSays = { "Нельзя недооценивать силу халявы", "Для наркотиков, секса и алкоголя есть свое время и место. И это место — колледж.", "Ты что, не знаешь главный закон физики? Все прикольное стоит минимум восемь баксов." };
-
-    public TMP_Text attackerText; // Текст для сообщения атакующего
-    public TMP_Text targetText; // Текст для сообщения атакуемого
-
-    public GameObject[] characters;
-    public GameObject[] weapons; // Массив объектов оружия
-    private Animator activeWeaponAnimator; // Аниматор на текущем активном оружии
-
-    private int activeWeaponIndex = 0; // Индекс текущего активного оружия
-    private int inGameCurrency = 0; // Количество внутриигровой валюты
-
-    public MoveAroundCircle moveAroundCircle; // Ссылка на скрипт MoveAroundCircle
     public GameObject bossChangePanel; // Панель для отображения текста
-    public TMP_Text bossChangeText; // Текст для отображения сообщений
-
-    private Animator outputFrameAnimator;
-    private Animator ggAnimator; // Аниматор на объекте GG
-    private Animator pletkAnimator; // Аниматор на объекте Pletk
-    private Animator activeCharacterAnimator; // Аниматор на активном объекте
-    private int activeCharacterIndex = 0; // Индекс текущего активного персонажа
-
     public GameObject attackerMessage; // Объект сообщения атакующего
     public GameObject targetMessage; // Объект сообщения атакуемого
 
+    // Characters and Weapons
+    [Header("Characters and Weapons")]
+    public GameObject[] characters;
+    public GameObject[] weapons; // Массив объектов оружия
+
+    // Sled Images
+    [Header("Sled Images")]
+    public Sprite[] sledImages; // Массив изображений для объекта Sled
+
+    // Animators
+    [Header("Animators")]
+    private Animator activeWeaponAnimator; // Аниматор на текущем активном оружии
+    private Animator ggAnimator; // Аниматор на объекте GG
+    private Animator pletkAnimator; // Аниматор на объекте Pletk
+    private Animator activeCharacterAnimator; // Аниматор на активном объекте
+    private Animator outputFrameAnimator;
+
+    // Game Data
+    [Header("Game Data")]
+    public string[] AttackerSays = { "Лесбиянки — это женщины с родинками на шее, из которых растут волосы", "Мы не заблудились, мы просто не знаем, где находимся" };
+    public string[] AttackindSays = { "Нельзя недооценивать силу халявы", "Для наркотиков, секса и алкоголя есть свое время и место. И это место — колледж.", "Ты что, не знаешь главный закон физики? Все прикольное стоит минимум восемь баксов." };
+
+    // Other Variables
+    [Header("Other Variables")]
+    private int activeWeaponIndex = 0; // Индекс текущего активного оружия
+    private int activeCharacterIndex = 0; // Индекс текущего активного персонажа
+    private int inGameCurrency = 0; // Количество внутриигровой валюты
     private int weaponDamage = 1; // Урон текущего оружия
     private int coinsPerClick = 1; // Количество монет, зарабатываемых за клик
     private int inGameCoinsPerClick = 1; // Количество внутриигровых монет, зарабатываемых за клик
-
-
     private int clickCount = 0;
     private int clickThreshold = 10;
     private int round = 1;
     private string userId;
     private string apiUrl = "https://1aa0-195-10-205-80.ngrok-free.app/api/";
+
+    // Upgrade Costs
+    private int[] upgradeCosts = { 30, 100, 300, 500, 1000, 5000 };
+    private int currentUpgradeLevel = 0;
+
+    // Reference to the MoveAroundCircle script
+    public MoveAroundCircle moveAroundCircle; // Ссылка на скрипт MoveAroundCircle
 
     void Start()
     {
@@ -81,18 +100,9 @@ public class ButtonManager : MonoBehaviour
 
         // Устанавливаем активного персонажа
         SetActiveCharacter(0);
-        SetActiveWeapon(0); // Устанавливаем начальное активное оружие
 
         UpdateUI();
-    }
-
-    void Update()
-    {
-        if (Input.GetKeyDown(KeyCode.Space))
-        {
-            // Сменяем оружие при нажатии клавиши Space
-            ChangeWeapon();
-        }
+        UpdateUpgradeButton();
     }
 
     public void OnButtonClick()
@@ -116,6 +126,7 @@ public class ButtonManager : MonoBehaviour
 
             // Увеличиваем количество внутриигровой валюты
             inGameCurrency += inGameCoinsPerClick;
+            Debug.Log($"Currency after click: {inGameCurrency}");
             UpdateUI();
 
             // Создаем плавающий текст
@@ -157,13 +168,13 @@ public class ButtonManager : MonoBehaviour
         }
     }
 
-
     IEnumerator ResetAttackParameter()
     {
-        yield return new WaitForSeconds(0.1f); // Ожидаем одну секунду (или другое время в зависимости от продолжительности анимации)
+        yield return new WaitForSeconds(0.1f); // Ожидаем 0.1 секунды (или другое время в зависимости от продолжительности анимации)
         ggAnimator.SetBool("attack", false); // Отключаем анимацию атаки
         activeCharacterAnimator.SetBool("attack", false); // Отключаем анимацию атаки
         pletkAnimator.SetBool("attack", false);
+
         if (activeWeaponAnimator != null)
         {
             activeWeaponAnimator.SetBool("attack", false); // Отключаем анимацию атаки на активном оружии
@@ -176,8 +187,8 @@ public class ButtonManager : MonoBehaviour
         clickSlider.value = (float)clickCount / clickThreshold;
         RoundText.text = $"{round}";
         currencyText.text = $"Currency: {inGameCurrency}"; // Обновляем текст внутриигровой валюты
+        Debug.Log($"Update UI called. Current currency: {inGameCurrency}");
     }
-
 
     public void OnGetBalanceButtonClicked()
     {
@@ -518,12 +529,6 @@ public class ButtonManager : MonoBehaviour
         targetMessage.SetActive(false);
     }
 
-    public void OnWeaponPurchased(int weaponIndex)
-    {
-        SetActiveWeapon(weaponIndex);
-        // Дополнительная логика для покупки оружия (например, вычитание монет)
-    }
-
     private void SetActiveWeapon(int index)
     {
         if (index < 0 || index >= weapons.Length)
@@ -547,8 +552,46 @@ public class ButtonManager : MonoBehaviour
         weaponDamage = index + 1; // Урон соответствует индексу + 1 (первое оружие наносит 1 урон и т.д.)
         coinsPerClick = index + 1; // Количество монет соответствует индексу + 1
         inGameCoinsPerClick = index + 1; // Количество внутриигровых монет соответствует индексу + 1
+
+        // Устанавливаем изображение для sled
+        if (index < sledImages.Length)
+        {
+            sled.GetComponent<Image>().sprite = sledImages[index];
+        }
     }
 
+    public void OnUpgradeButtonClicked()
+    {
+        if (currentUpgradeLevel < upgradeCosts.Length && inGameCurrency >= upgradeCosts[currentUpgradeLevel])
+        {
+            inGameCurrency -= upgradeCosts[currentUpgradeLevel];
+            currentUpgradeLevel++;
+            SetActiveWeapon(currentUpgradeLevel);
+            UpdateUpgradeButton();
+            UpdateUI();
+        }
+    }
+
+    private void UpdateUpgradeButton()
+    {
+        if (currentUpgradeLevel < upgradeCosts.Length)
+        {
+            upgradeButtonText.text = $"Upgrade Weapon ({upgradeCosts[currentUpgradeLevel]} Coins)";
+        }
+        else
+        {
+            upgradeButtonText.text = "Max Level";
+        }
+    }
+
+    void Update()
+    {
+        // Проверяем нажатие пробела для смены оружия
+        if (Input.GetKeyDown(KeyCode.Space))
+        {
+            ChangeWeapon();
+        }
+    }
 
     private void ChangeWeapon()
     {
