@@ -41,17 +41,6 @@ public class PaintCircleSegment : MonoBehaviour
         bool wasInSector = isInSector;
         isInSector = IsAngleInSector(currentAngle, startAngle, endAngle);
 
-        if (isInSector && !wasInSector)
-        {
-            // Объект вошел в сектор
-            Debug.Log($"Object entered the sector at angle: {currentAngle}, Sector: {startAngle} to {endAngle}");
-        }
-        else if (!isInSector && wasInSector)
-        {
-            // Объект вышел из сектора
-            Debug.Log($"Object exited the sector at angle: {currentAngle}, Sector: {startAngle} to {endAngle}");
-        }
-
         // Обновляем закрашивание сектора и индикаторы
         PaintSegment(startAngle, endAngle);
         UpdateIndicators();
@@ -70,7 +59,6 @@ public class PaintCircleSegment : MonoBehaviour
     {
         startAngle = Random.Range(0f, 360f);
         endAngle = (startAngle + 30f) % 360f;
-        Debug.Log($"New Sector: Start = {startAngle}, End = {endAngle}");
     }
 
     public bool IsAngleInSector(float angle, float start, float end)

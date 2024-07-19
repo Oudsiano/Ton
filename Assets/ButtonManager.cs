@@ -67,6 +67,8 @@ public class ButtonManager : MonoBehaviour
     private string userId;
     private string apiUrl = "https://1aa0-195-10-205-80.ngrok-free.app/api/";
 
+    public string RefLink="Refka";
+
     // Upgrade Costs
     private int[] upgradeCosts = { 30, 100, 300, 500, 1000, 5000 };
     private int currentUpgradeLevel = 0;
@@ -198,6 +200,7 @@ public class ButtonManager : MonoBehaviour
     IEnumerator InitializeUserData()
     {
         yield return GetCoins();
+        yield return GetReferralLink();
         yield return GetLevelBoss();
         yield return GetCountBlows();
     }
@@ -221,6 +224,26 @@ public class ButtonManager : MonoBehaviour
                 CoinData coinData = JsonUtility.FromJson<CoinData>(jsonResponse);
                 balanceText.text = "Balance: " + coinData.balance;
                 Debug.Log("Balance: " + coinData.balance);
+            }
+        }
+    }
+    IEnumerator GetReferralLink()
+    {
+        using (UnityWebRequest www = UnityWebRequest.Get(apiUrl + "referral/" + userId))
+        {
+            www.SetRequestHeader("ngrok-skip-browser-warning", "true");
+            yield return www.SendWebRequest();
+
+            if (www.result != UnityWebRequest.Result.Success)
+            {
+                Debug.Log(www.error);
+                balanceText.text = "Error fetching referral link";
+            }
+            else
+            {
+                // Получаем реферальную ссылку из ответа
+                RefLink = www.downloadHandler.text;
+                Debug.Log("Referral Link: " + RefLink);
             }
         }
     }
