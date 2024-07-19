@@ -84,6 +84,11 @@ public class ButtonManager : MonoBehaviour
         id.text = userId;
         Debug.Log("User ID: " + userId);
 
+#if DEBUG
+        if (string.IsNullOrEmpty(userId))
+            userId = "1";
+#endif
+
         if (!string.IsNullOrEmpty(userId))
         {
             StartCoroutine(InitializeUserData());
