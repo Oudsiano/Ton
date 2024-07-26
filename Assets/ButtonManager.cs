@@ -6,6 +6,19 @@ using System.Collections;
 using System;
 using DG.Tweening;
 
+[System.Serializable]
+public class UserData
+{
+    public int energy = 20;
+    public string energytime;
+    public string referral_link;
+    public float balance;
+    public int level_boss;
+    public int count_blows;
+    public string server_time;
+}
+
+
 public class ButtonManager : MonoBehaviour
 {
     // UI Elements
@@ -64,8 +77,11 @@ public class ButtonManager : MonoBehaviour
     private int clickCount = 0;
     private int clickThreshold = 10;
     private int round = 1;
-    private string userId;
-    private string apiUrl = "https://1aa0-195-10-205-80.ngrok-free.app/api/";
+    public static string userId;
+    public static string apiUrl = "https://1aa0-195-10-205-80.ngrok-free.app/api/";
+
+    public static UserData userData;
+
 
     public string RefLink="Refka";
 
@@ -114,6 +130,12 @@ public class ButtonManager : MonoBehaviour
 
     public void OnButtonClick()
     {
+        if (userData.energy < 1)
+            return;
+
+
+
+
         // Проверяем, находится ли текущий угол в диапазоне углов
         if (paintCircleSegment.IsAngleInSector(paintCircleSegment.currentAngle, paintCircleSegment.startAngle, paintCircleSegment.endAngle))
         {
@@ -172,6 +194,8 @@ public class ButtonManager : MonoBehaviour
 
             // Запускаем анимацию Sled
             AnimateSled();
+
+            WasMadeClick();
         }
     }
 
@@ -204,10 +228,36 @@ public class ButtonManager : MonoBehaviour
 
     IEnumerator InitializeUserData()
     {
+        yield return GetPlayerData();
         yield return GetCoins();
-        yield return GetReferralLink();
         yield return GetLevelBoss();
         yield return GetCountBlows();
+    }
+
+    public void GetData()
+    {
+        StartCoroutine(GetPlayerData());
+    }
+
+    IEnumerator GetPlayerData()
+    {
+        using (UnityWebRequest www = UnityWebRequest.Get(apiUrl + "data/" + userId))
+        {
+            www.SetRequestHeader("ngrok-skip-browser-warning", "true");
+            yield return www.SendWebRequest();
+
+            if (www.result != UnityWebRequest.Result.Success)
+            {
+                Debug.Log(www.error);
+            }
+            else
+            {
+                string jsonResponse = www.downloadHandler.text;
+                userData = JsonUtility.FromJson<UserData>(jsonResponse);
+                RefLink = userData.referral_link;
+                EnergyUI.ServerTime = float.Parse(userData.server_time);
+            }
+        }
     }
 
     IEnumerator GetCoins()
@@ -232,9 +282,10 @@ public class ButtonManager : MonoBehaviour
             }
         }
     }
-    IEnumerator GetReferralLink()
+
+    IEnumerable WasMadeClick()
     {
-        using (UnityWebRequest www = UnityWebRequest.Get(apiUrl + "referral/" + userId))
+        using (UnityWebRequest www = UnityWebRequest.Get(apiUrl + "click/" + userId))
         {
             www.SetRequestHeader("ngrok-skip-browser-warning", "true");
             yield return www.SendWebRequest();
@@ -242,13 +293,13 @@ public class ButtonManager : MonoBehaviour
             if (www.result != UnityWebRequest.Result.Success)
             {
                 Debug.Log(www.error);
-                balanceText.text = "Error fetching referral link";
             }
             else
             {
-                // Получаем реферальную ссылку из ответа
-                RefLink = www.downloadHandler.text;
-                Debug.Log("Referral Link: " + RefLink);
+                string jsonResponse = www.downloadHandler.text;
+                userData = JsonUtility.FromJson<UserData>(jsonResponse);
+                RefLink = userData.referral_link;
+                EnergyUI.ServerTime = float.Parse(userData.server_time);
             }
         }
     }

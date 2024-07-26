@@ -14,6 +14,7 @@ public class UI_bottombuttons : MonoBehaviour
     [SerializeField] private Button closeBtn;
     [SerializeField] private GameObject backBtn;
     [SerializeField] private TMPro.TMP_InputField selectableText;
+    [SerializeField] private Button btnCopy;
 
 
     [Header("Other")]
