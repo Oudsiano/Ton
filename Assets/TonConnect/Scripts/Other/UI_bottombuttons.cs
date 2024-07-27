@@ -1,6 +1,7 @@
 using UnityEngine;
 using UnityEngine.UI;
 using DG.Tweening;
+using System;
 
 public class UI_bottombuttons : MonoBehaviour
 {
@@ -30,10 +31,16 @@ public class UI_bottombuttons : MonoBehaviour
         btn2.onClick.AddListener(OnClickButton2);
         btn3.onClick.AddListener(OnClickButton3);
         closeBtn.onClick.AddListener(OnClickClose);
+        btnCopy.onClick.AddListener(OnClickCopy);
 
         buttonManager = FindObjectOfType<ButtonManager>();
 
         SetState(0);
+    }
+
+    private void OnClickCopy()
+    {
+        GUIUtility.systemCopyBuffer = buttonManager.RefLink;
     }
 
     private void OnClickButton1()

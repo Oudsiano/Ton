@@ -5,6 +5,7 @@ using TMPro;
 using System.Collections;
 using System;
 using DG.Tweening;
+using System.Globalization;
 
 [System.Serializable]
 public class UserData
@@ -78,7 +79,7 @@ public class ButtonManager : MonoBehaviour
     private int clickThreshold = 10;
     private int round = 1;
     public static string userId;
-    public static string apiUrl = "https://1aa0-195-10-205-80.ngrok-free.app/api/";
+    public static string apiUrl = "https://3f22-195-10-205-80.ngrok-free.app/api/";
 
     public static UserData userData;
 
@@ -102,7 +103,7 @@ public class ButtonManager : MonoBehaviour
 
 #if DEBUG
         if (string.IsNullOrEmpty(userId))
-            userId = "1";
+            userId = "5004782446";
 #endif
 
         if (!string.IsNullOrEmpty(userId))
@@ -132,7 +133,7 @@ public class ButtonManager : MonoBehaviour
     {
         if (userData.energy < 1)
             return;
-
+        StartCoroutine(GetPlayerData("click/"));
 
 
 
@@ -228,7 +229,7 @@ public class ButtonManager : MonoBehaviour
 
     IEnumerator InitializeUserData()
     {
-        yield return GetPlayerData();
+        yield return GetPlayerData("data/");
         yield return GetCoins();
         yield return GetLevelBoss();
         yield return GetCountBlows();
@@ -236,13 +237,15 @@ public class ButtonManager : MonoBehaviour
 
     public void GetData()
     {
-        StartCoroutine(GetPlayerData());
+        StartCoroutine(GetPlayerData("data/"));
     }
 
-    IEnumerator GetPlayerData()
+    IEnumerator GetPlayerData(string apiKey)
     {
-        using (UnityWebRequest www = UnityWebRequest.Get(apiUrl + "data/" + userId))
+        using (UnityWebRequest www = UnityWebRequest.Get(apiUrl + apiKey + userId))
         {
+
+            Debug.Log(apiUrl + "data/" + userId);
             www.SetRequestHeader("ngrok-skip-browser-warning", "true");
             yield return www.SendWebRequest();
 
@@ -255,7 +258,8 @@ public class ButtonManager : MonoBehaviour
                 string jsonResponse = www.downloadHandler.text;
                 userData = JsonUtility.FromJson<UserData>(jsonResponse);
                 RefLink = userData.referral_link;
-                EnergyUI.ServerTime = float.Parse(userData.server_time);
+                float temp = float.Parse(userData.server_time, CultureInfo.InvariantCulture);
+                EnergyUI.ServerTime = temp;
             }
         }
     }

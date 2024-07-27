@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Globalization;
 using TMPro;
 using UnityEngine;
 using UnityEngine.Networking;
@@ -14,16 +15,24 @@ public class EnergyUI : MonoBehaviour
 
     public float energytimeDelta = 0;
 
-    public static float ServerTime;
+    private static double serverTime;
     public static int energyTime;
+
+    public static double ServerTime { get => serverTime; 
+        set 
+        { 
+            serverTime = value; 
+        } 
+    }
 
     // Update is called once per frame
     void Update()
     {
         ServerTime += Time.deltaTime;
 
+        float energyT = float.Parse(ButtonManager.userData.energytime, CultureInfo.InvariantCulture);
 
-        energytimeDelta = int.Parse( ButtonManager.userData.energytime) -  (int)(ServerTime);
+        energytimeDelta = (int)(energyT) -  (int)(ServerTime);
 
         if (energytimeDelta<0)
         {
