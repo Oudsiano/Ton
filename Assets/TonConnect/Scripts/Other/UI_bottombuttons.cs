@@ -40,7 +40,7 @@ public class UI_bottombuttons : MonoBehaviour
 
     private void OnClickCopy()
     {
-        GUIUtility.systemCopyBuffer = buttonManager.RefLink;
+        GUIUtility.systemCopyBuffer = ButtonManager.userData.referral_link;
     }
 
     private void OnClickButton1()
@@ -48,7 +48,7 @@ public class UI_bottombuttons : MonoBehaviour
         SetState(1);
         if (buttonManager != null)
         {
-            selectableText.text = buttonManager.RefLink;
+            selectableText.text = ButtonManager.userData.referral_link;
         }
     }
 

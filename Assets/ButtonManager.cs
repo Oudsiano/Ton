@@ -11,12 +11,15 @@ using System.Globalization;
 public class UserData
 {
     public int energy = 20;
-    public string energytime;
+    public long energytime; // Assuming energytime and server_time are Unix timestamps
     public string referral_link;
     public float balance;
     public int level_boss;
     public int count_blows;
-    public string server_time;
+    public int weapon;
+    public float soft_coins;
+    public long server_time;
+    public bool new_boss;
 }
 
 
@@ -35,6 +38,8 @@ public class ButtonManager : MonoBehaviour
     public TMP_Text bossChangeText; // Текст для отображения сообщений
     public TMP_Text upgradeButtonText; // Текст для кнопки апгрейда оружия
     public Button upgradeButton; // Кнопка апгрейда оружия
+
+    public GameObject NotConnectedPanel;
 
     // Game Objects
     [Header("Game Objects")]
@@ -69,29 +74,40 @@ public class ButtonManager : MonoBehaviour
 
     // Other Variables
     [Header("Other Variables")]
-    private int activeWeaponIndex = 0; // Индекс текущего активного оружия
-    private int activeCharacterIndex = 0; // Индекс текущего активного персонажа
-    private int inGameCurrency = 0; // Количество внутриигровой валюты
-    private int weaponDamage = 1; // Урон текущего оружия
-    private int coinsPerClick = 1; // Количество монет, зарабатываемых за клик
-    private int inGameCoinsPerClick = 1; // Количество внутриигровых монет, зарабатываемых за клик
-    private int clickCount = 0;
-    private int clickThreshold = 10;
-    private int round = 1;
+    //private int activeWeaponIndex = 0; // Индекс текущего активного оружия
+    //private int activeCharacterIndex = 0; // Индекс текущего активного персонажа
+    //private int inGameCurrency = 0; // Количество внутриигровой валюты
+    //private int weaponDamage = 1; // Урон текущего оружия
+    //private int coinsPerClick = 1; // Количество монет, зарабатываемых за клик
+    //private int inGameCoinsPerClick = 1; // Количество внутриигровых монет, зарабатываемых за клик
+    //private int clickCount = 0;
+    //private int clickThreshold = 10;
+    //private int round = 1;
     public static string userId;
     public static string apiUrl = "https://3f22-195-10-205-80.ngrok-free.app/api/";
 
     public static UserData userData;
-
-
-    public string RefLink="Refka";
+    private static bool gameStarted;
 
     // Upgrade Costs
     private int[] upgradeCosts = { 30, 100, 300, 500, 1000, 5000 };
-    private int currentUpgradeLevel = 0;
+    //private int currentUpgradeLevel = 0;
 
     // Reference to the MoveAroundCircle script
     public MoveAroundCircle moveAroundCircle; // Ссылка на скрипт MoveAroundCircle
+
+    public bool GameStarted
+    {
+        get => gameStarted;
+        set
+        {
+            gameStarted = value;
+            if (!gameStarted)
+                NotConnectedPanel.SetActive(true);
+            else
+                NotConnectedPanel.SetActive(false);
+        }
+    }
 
     void Start()
     {
@@ -108,7 +124,7 @@ public class ButtonManager : MonoBehaviour
 
         if (!string.IsNullOrEmpty(userId))
         {
-            StartCoroutine(InitializeUserData());
+            StartCoroutine(GetPlayerData("data/"));
         }
         else
         {
@@ -122,24 +138,17 @@ public class ButtonManager : MonoBehaviour
         ggAnimator = GameObject.Find("GG").GetComponent<Animator>();
         pletkAnimator = GameObject.Find("Pletk").GetComponent<Animator>();
 
-        // Устанавливаем активного персонажа
-        SetActiveCharacter(0);
-
         UpdateUI();
-        UpdateUpgradeButton();
     }
 
     public void OnButtonClick()
     {
-        if (userData.energy < 1)
-            return;
-        StartCoroutine(GetPlayerData("click/"));
-
-
-
         // Проверяем, находится ли текущий угол в диапазоне углов
         if (paintCircleSegment.IsAngleInSector(paintCircleSegment.currentAngle, paintCircleSegment.startAngle, paintCircleSegment.endAngle))
         {
+            StartCoroutine(GetPlayerData("click/"));
+
+
             // Запускаем анимацию атаки
             ggAnimator.SetBool("attack", true);
             activeCharacterAnimator.SetBool("attack", true);
@@ -149,56 +158,34 @@ public class ButtonManager : MonoBehaviour
                 activeWeaponAnimator.SetBool("attack", true); // Запускаем анимацию атаки на активном оружии
             }
 
-            clickCount += weaponDamage; // Увеличиваем количество кликов на значение урона текущего оружия
+            //clickCount += weaponDamage; // Увеличиваем количество кликов на значение урона текущего оружия
 
-            StartCoroutine(UpdateCoins(coinsPerClick)); // Добавляем монеты с каждым кликом
-            StartCoroutine(UpdateCountBlows(clickCount)); // Обновляем количество тапов на сервере
+            //StartCoroutine(UpdateCoins(coinsPerClick)); // Добавляем монеты с каждым кликом
+            //StartCoroutine(UpdateCountBlows(clickCount)); // Обновляем количество тапов на сервере
 
             // Увеличиваем количество внутриигровой валюты
-            inGameCurrency += inGameCoinsPerClick;
-            Debug.Log($"Currency after click: {inGameCurrency}");
-            UpdateUI();
+            //inGameCurrency += inGameCoinsPerClick;
+            //Debug.Log($"Currency after click: {inGameCurrency}");
+            ShowFloatingText($"+{userData.weapon}");
 
-            // Создаем плавающий текст
-            ShowFloatingText($"+{coinsPerClick}");
-
-            // Показываем случайное сообщение
             ShowRandomMessage();
 
-            if (clickCount >= clickThreshold)
-            {
-                clickCount = 0;
-                round++;
-                clickThreshold += round * 10; // Увеличиваем количество нажатий с каждым раундом
-                StartCoroutine(UpdateLevelBoss(round)); // Обновляем номер босса на сервере
-                UpdateUI();
-
-                // Сменяем активного персонажа
-                ChangeActiveCharacter();
-
-                // Увеличиваем скорость вращения объекта
-                if (moveAroundCircle != null)
-                {
-                    Debug.Log("Увеличение скорости вращения объекта");
-                    moveAroundCircle.IncreaseSpeed(0.5f); // Увеличиваем скорость на 0.5 единиц (можно изменить на желаемое значение)
-                }
-
-                // Увеличиваем скорость вращения PaintCircleSegment (если необходимо)
-                paintCircleSegment.IncreaseRotationSpeed(10f); // Увеличиваем скорость на 10 единиц (можно изменить на желаемое значение)
-            }
-
-            // Изменяем диапазон углов после успешного клика
             paintCircleSegment.SetRandomAngles();
 
-            // Запускаем сброс параметра через одну секунду
             StartCoroutine(ResetAttackParameter());
 
-            // Запускаем анимацию Sled
             AnimateSled();
-
-            WasMadeClick();
         }
     }
+
+    private void newBoss()
+    {
+        ChangeActiveCharacter();
+        if (moveAroundCircle != null)
+            moveAroundCircle.SetSpeed(1+userData.level_boss*0.5f); 
+        paintCircleSegment.SetRotationSpeed((1 + userData.level_boss)*10); 
+    }
+
 
     IEnumerator ResetAttackParameter()
     {
@@ -215,24 +202,28 @@ public class ButtonManager : MonoBehaviour
 
     void UpdateUI()
     {
-        ClickCountText.text = $"{clickCount} / {clickThreshold}";
-        clickSlider.value = (float)clickCount / clickThreshold;
-        RoundText.text = $"{round}";
-        currencyText.text = $"Currency: {inGameCurrency}"; // Обновляем текст внутриигровой валюты
-        Debug.Log($"Update UI called. Current currency: {inGameCurrency}");
+        ClickCountText.text = $"{userData.count_blows} / {(userData.level_boss + 1) * 10}";
+        clickSlider.value = (float)userData.count_blows / (userData.level_boss + 1) * 10;
+        RoundText.text = $"{userData.level_boss}";
+        currencyText.text = $"Currency: {(int)(userData.soft_coins)}"; // Обновляем текст внутриигровой валюты
+        Debug.Log($"Update UI called. Current currency: {(int)(userData.soft_coins)}");
+
+        if (userData.weapon < upgradeCosts.Length)
+            upgradeButtonText.text = $"Upgrade Weapon ({upgradeCosts[userData.weapon]} Coins)";
+        else
+            upgradeButtonText.text = "Max Level";
+
+
+        balanceText.text = "Balance: " + userData.balance;
+
+        // Устанавливаем активного персонажа
+        SetActiveCharacter();
+
     }
 
     public void OnGetBalanceButtonClicked()
     {
-        StartCoroutine(GetCoins());
-    }
-
-    IEnumerator InitializeUserData()
-    {
-        yield return GetPlayerData("data/");
-        yield return GetCoins();
-        yield return GetLevelBoss();
-        yield return GetCountBlows();
+        StartCoroutine(GetPlayerData("data/"));
     }
 
     public void GetData()
@@ -245,25 +236,31 @@ public class ButtonManager : MonoBehaviour
         using (UnityWebRequest www = UnityWebRequest.Get(apiUrl + apiKey + userId))
         {
 
-            Debug.Log(apiUrl + "data/" + userId);
+            Debug.Log(apiUrl + apiKey + userId);
             www.SetRequestHeader("ngrok-skip-browser-warning", "true");
             yield return www.SendWebRequest();
 
             if (www.result != UnityWebRequest.Result.Success)
             {
                 Debug.Log(www.error);
+                GameStarted = false;
             }
             else
             {
                 string jsonResponse = www.downloadHandler.text;
                 userData = JsonUtility.FromJson<UserData>(jsonResponse);
-                RefLink = userData.referral_link;
-                float temp = float.Parse(userData.server_time, CultureInfo.InvariantCulture);
-                EnergyUI.ServerTime = temp;
+                EnergyUI.ServerTime = userData.server_time;
+                GameStarted = true;
+
+                if (userData.new_boss)
+                    newBoss();
+
+                UpdateUI();
             }
         }
     }
-
+    //не нужно
+    /*
     IEnumerator GetCoins()
     {
         using (UnityWebRequest www = UnityWebRequest.Get(apiUrl + "coins/" + userId))
@@ -285,30 +282,12 @@ public class ButtonManager : MonoBehaviour
                 Debug.Log("Balance: " + coinData.balance);
             }
         }
-    }
+    }*/
 
-    IEnumerable WasMadeClick()
-    {
-        using (UnityWebRequest www = UnityWebRequest.Get(apiUrl + "click/" + userId))
-        {
-            www.SetRequestHeader("ngrok-skip-browser-warning", "true");
-            yield return www.SendWebRequest();
 
-            if (www.result != UnityWebRequest.Result.Success)
-            {
-                Debug.Log(www.error);
-            }
-            else
-            {
-                string jsonResponse = www.downloadHandler.text;
-                userData = JsonUtility.FromJson<UserData>(jsonResponse);
-                RefLink = userData.referral_link;
-                EnergyUI.ServerTime = float.Parse(userData.server_time);
-            }
-        }
-    }
 
-    IEnumerator UpdateCoins(int coins)
+    //Это делает сервер теперь
+    /*IEnumerator UpdateCoins(int coins)
     {
         CoinUpdateData data = new CoinUpdateData { coins = coins };
         string jsonData = JsonUtility.ToJson(data);
@@ -331,8 +310,9 @@ public class ButtonManager : MonoBehaviour
                 StartCoroutine(GetCoins());
             }
         }
-    }
+    }*/
 
+    /*
     IEnumerator GetLevelBoss()
     {
         using (UnityWebRequest www = UnityWebRequest.Get(apiUrl + "level_boss/" + userId))
@@ -353,8 +333,9 @@ public class ButtonManager : MonoBehaviour
                 Debug.Log("Level Boss: " + levelBossData.level_boss);
             }
         }
-    }
+    }*/
 
+    /*
     IEnumerator UpdateLevelBoss(int levelBoss)
     {
         LevelBossData data = new LevelBossData { level_boss = levelBoss };
@@ -373,8 +354,10 @@ public class ButtonManager : MonoBehaviour
                 Debug.Log(www.error);
             }
         }
-    }
+    }*/
 
+    //Нет потребноси в таком запросе больше
+    /*
     IEnumerator GetCountBlows()
     {
         using (UnityWebRequest www = UnityWebRequest.Get(apiUrl + "count_blows/" + userId))
@@ -395,8 +378,10 @@ public class ButtonManager : MonoBehaviour
                 Debug.Log("Count Blows: " + countBlowsData.count_blows);
             }
         }
-    }
+    }*/
 
+    //Это делает сервер теперь
+    /*
     IEnumerator UpdateCountBlows(int countBlows)
     {
         CountBlowsData data = new CountBlowsData { count_blows = countBlows };
@@ -415,31 +400,31 @@ public class ButtonManager : MonoBehaviour
                 Debug.Log(www.error);
             }
         }
-    }
-
-    [System.Serializable]
-    private class CoinData
-    {
-        public float balance;
-    }
-
-    [System.Serializable]
-    private class CoinUpdateData
-    {
-        public int coins;
-    }
-
+    }*/
+    //не нужно
+    /*
     [System.Serializable]
     private class LevelBossData
     {
         public int level_boss;
     }
 
+    
+    [System.Serializable]
+    private class CoinData
+    {
+        public float balance;
+    }
+    [System.Serializable]
+    private class CoinUpdateData
+    {
+        public int coins;
+    }
     [System.Serializable]
     private class CountBlowsData
     {
         public int count_blows;
-    }
+    }*/
 
     private string GetParameterFromUrl(string url, string parameterName)
     {
@@ -525,34 +510,31 @@ public class ButtonManager : MonoBehaviour
             });
     }
 
-    private void SetActiveCharacter(int index)
+    private void SetActiveCharacter()
     {
+        int index = userData.level_boss;
         if (index < 0 || index >= characters.Length)
         {
             Debug.LogError("Character index out of range!");
             return;
         }
 
-        // Деактивируем текущего активного персонажа
-        if (activeCharacterAnimator != null)
-        {
-            characters[activeCharacterIndex].SetActive(false);
-        }
+        foreach (var item in characters)
+            item.SetActive(false);
 
         // Активируем нового персонажа
-        activeCharacterIndex = index;
-        characters[activeCharacterIndex].SetActive(true);
-        activeCharacterAnimator = characters[activeCharacterIndex].GetComponent<Animator>();
+        characters[index].SetActive(true);
+        activeCharacterAnimator = characters[index].GetComponent<Animator>();
     }
 
     private void ChangeActiveCharacter()
     {
-        // Вычисляем индекс следующего персонажа
-        int nextCharacterIndex = (activeCharacterIndex + 1) % characters.Length;
+        if (userData.level_boss == 0)
+            return;
 
         // Получаем имена старого и нового босса
-        string oldBossName = characters[activeCharacterIndex].name;
-        string newBossName = characters[nextCharacterIndex].name;
+        string oldBossName = characters[(userData.level_boss-1) % characters.Length].name;
+        string newBossName = characters[(userData.level_boss) % characters.Length].name;
 
         // Обновляем текст в панели
         bossChangeText.text = $"Поздравляем! Босс с именем \"{oldBossName}\" повержен. Вам предстоит победить нового босса с именем \"{newBossName}\".";
@@ -560,16 +542,12 @@ public class ButtonManager : MonoBehaviour
         // Активируем панель
         bossChangePanel.SetActive(true);
 
-        // Деактивируем текущего активного персонажа
-        if (activeCharacterAnimator != null)
-        {
-            characters[activeCharacterIndex].SetActive(false);
-        }
+        foreach (var item in characters)
+            item.SetActive(false);
 
         // Активируем нового персонажа
-        activeCharacterIndex = nextCharacterIndex;
-        characters[activeCharacterIndex].SetActive(true);
-        activeCharacterAnimator = characters[activeCharacterIndex].GetComponent<Animator>();
+        characters[userData.level_boss % characters.Length].SetActive(true);
+        activeCharacterAnimator = characters[userData.level_boss % characters.Length].GetComponent<Animator>();
 
         // Запускаем корутину для деактивации панели через 3 секунды
         StartCoroutine(HideBossChangePanel());
@@ -612,60 +590,43 @@ public class ButtonManager : MonoBehaviour
         targetMessage.SetActive(false);
     }
 
-    private void SetActiveWeapon(int index)
+    private void SetActiveWeapon()
     {
+        int index = userData.weapon;
         if (index < 0 || index >= weapons.Length)
         {
             Debug.LogError("Weapon index out of range!");
             return;
         }
 
-        // Деактивируем текущее активное оружие
-        if (activeWeaponIndex >= 0 && activeWeaponIndex < weapons.Length)
-        {
-            weapons[activeWeaponIndex].SetActive(false);
-        }
+        foreach (var item in weapons)
+            item.SetActive(false);
 
         // Активируем новое оружие
-        activeWeaponIndex = index;
-        weapons[activeWeaponIndex].SetActive(true);
-        activeWeaponAnimator = weapons[activeWeaponIndex].GetComponent<Animator>();
+        weapons[index].SetActive(true);
+        activeWeaponAnimator = weapons[index].GetComponent<Animator>();
 
         // Обновляем характеристики оружия
-        weaponDamage = index + 1; // Урон соответствует индексу + 1 (первое оружие наносит 1 урон и т.д.)
-        coinsPerClick = index + 1; // Количество монет соответствует индексу + 1
-        inGameCoinsPerClick = index + 1; // Количество внутриигровых монет соответствует индексу + 1
+        //weaponDamage = index + 1; // Урон соответствует индексу + 1 (первое оружие наносит 1 урон и т.д.)
+        //coinsPerClick = index + 1; // Количество монет соответствует индексу + 1
+        //inGameCoinsPerClick = index + 1; // Количество внутриигровых монет соответствует индексу + 1
 
         // Устанавливаем изображение для sled
         if (index < sledImages.Length)
         {
             sled.GetComponent<Image>().sprite = sledImages[index];
         }
+
+        UpdateUI();
+
     }
 
     public void OnUpgradeButtonClicked()
     {
-        if (currentUpgradeLevel < upgradeCosts.Length && inGameCurrency >= upgradeCosts[currentUpgradeLevel])
-        {
-            inGameCurrency -= upgradeCosts[currentUpgradeLevel];
-            currentUpgradeLevel++;
-            SetActiveWeapon(currentUpgradeLevel);
-            UpdateUpgradeButton();
-            UpdateUI();
-        }
+        StartCoroutine(GetPlayerData("update/"));
+        SetActiveWeapon();
     }
 
-    private void UpdateUpgradeButton()
-    {
-        if (currentUpgradeLevel < upgradeCosts.Length)
-        {
-            upgradeButtonText.text = $"Upgrade Weapon ({upgradeCosts[currentUpgradeLevel]} Coins)";
-        }
-        else
-        {
-            upgradeButtonText.text = "Max Level";
-        }
-    }
 
     void Update()
     {
@@ -679,7 +640,7 @@ public class ButtonManager : MonoBehaviour
     private void ChangeWeapon()
     {
         // Вычисляем индекс следующего оружия
-        int nextWeaponIndex = (activeWeaponIndex + 1) % weapons.Length;
-        SetActiveWeapon(nextWeaponIndex);
+        userData.weapon = (userData.weapon + 1) % weapons.Length;
+                SetActiveWeapon();
     }
 }

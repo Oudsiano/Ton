@@ -113,8 +113,8 @@ public class PaintCircleSegment : MonoBehaviour
         }
     }
 
-    public void IncreaseRotationSpeed(float amount)
+    public void SetRotationSpeed(float _newSpeed)
     {
-        rotationSpeed += amount;
+        rotationSpeed = _newSpeed;
     }
 }

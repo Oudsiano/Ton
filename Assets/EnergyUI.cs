@@ -18,34 +18,34 @@ public class EnergyUI : MonoBehaviour
     private static double serverTime;
     public static int energyTime;
 
-    public static double ServerTime { get => serverTime; 
-        set 
-        { 
-            serverTime = value; 
-        } 
+    public static double ServerTime
+    {
+        get => serverTime;
+        set
+        {
+            serverTime = value;
+        }
     }
 
     // Update is called once per frame
     void Update()
     {
+        ButtonManager buttonManager = FindObjectOfType<ButtonManager>();
+        if (!buttonManager.GameStarted)
+            return;
+
+
         ServerTime += Time.deltaTime;
 
-        float energyT = float.Parse(ButtonManager.userData.energytime, CultureInfo.InvariantCulture);
+        long energyT = ButtonManager.userData.energytime;
 
-        energytimeDelta = (int)(energyT) -  (int)(ServerTime);
+        energytimeDelta = (int)(energyT) - (int)(ServerTime);
 
-        if (energytimeDelta<0)
-        {
-            ButtonManager buttonManager = FindObjectOfType<ButtonManager>();
-            if (buttonManager != null)
-            {
-                buttonManager.GetData();
-            }
-        }
+        if (energytimeDelta < 0)
+            buttonManager.GetData();
 
         TimeSpan timeSpan = TimeSpan.FromSeconds(energytimeDelta);
 
-        // Форматируем TimeSpan в строку формата "HH:mm:ss"
         string formattedTime = string.Format("{0:D2}:{1:D2}:{2:D2}",
                                              timeSpan.Hours,
                                              timeSpan.Minutes,

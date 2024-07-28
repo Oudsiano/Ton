@@ -25,9 +25,9 @@ public class MoveAroundCircle : MonoBehaviour
         //Debug.Log("Current Angle: " + angleInDegrees % 360);
     }
 
-    public void IncreaseSpeed(float increment)
+    public void SetSpeed(float _speed)
     {
-        speed += increment;
-        Debug.Log("Скорость увеличена на " + increment + ". Новая скорость: " + speed);
+        Debug.Log("Скорость увеличена на " + (_speed- speed) + ". Новая скорость: " + _speed);
+        speed = _speed;
     }
 }
