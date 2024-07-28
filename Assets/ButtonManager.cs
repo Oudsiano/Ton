@@ -137,8 +137,6 @@ public class ButtonManager : MonoBehaviour
         // Получаем компоненты аниматора на объектах GG и Pletk
         ggAnimator = GameObject.Find("GG").GetComponent<Animator>();
         pletkAnimator = GameObject.Find("Pletk").GetComponent<Animator>();
-
-        UpdateUI();
     }
 
     public void OnButtonClick()
