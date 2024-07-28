@@ -117,10 +117,8 @@ public class ButtonManager : MonoBehaviour
         id.text = userId;
         Debug.Log("User ID: " + userId);
 
-#if DEBUG
         if (string.IsNullOrEmpty(userId))
             userId = "5004782446";
-#endif
 
         if (!string.IsNullOrEmpty(userId))
         {
