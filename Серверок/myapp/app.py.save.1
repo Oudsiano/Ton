@@ -1,0 +1,31 @@
+from flask import Flask, request, jsonify
+from flask_cors import CORS
+import sqlite3
+
+app = Flask(__name__)
+CORS(app)  # Разрешить CORS для всех маршрутов
+db_path = '/root/Botsqyzz/users.db'  # Указан путь к вашей базе данных
+
+@app.route('/api/coins/<id>', methods=['GET'])
+def get_coins(id):
+    try:
+        conn = sqlite3.connect(db_path)
+        cursor = conn.cursor()
+        cursor.execute('SELECT balance FROM users WHERE user_id = ?', (id,))
+        row = cursor.fetchone()
+        conn.close()
+        if row:
+            return jsonify({'balance': row[0]})
+        else:
+            return jsonify({'error': 'User not found'}), 404
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/coins/<id>', methods=['POST'])
+def update_coins(id):
+    try:
+        data = request.get_json()
+        coins = data.get('coins')
+        conn = sqlite3.connect(db_path)
+        cursor = conn.cursor()
+        cursor.execute('UPDATE users SET balance = balance + ? 
